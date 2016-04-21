@@ -9,6 +9,7 @@ var helpers = require('../helpers'),
 
 module.exports = function (table, item, query) {
     var tableName = helpers.formatTableName(table.schema || 'dbo', table.name),
+        pkName = table.pkName || 'id',
         setStatements = [],
         versionValue,
         parameters = [],
@@ -27,7 +28,7 @@ module.exports = function (table, item, query) {
         }
     }
 
-    var sql = util.format("UPDATE %s SET %s WHERE [id] = @id%s", tableName, setStatements.join(','), filter.sql);
+    var sql = util.format("UPDATE %s SET %s WHERE [%s] = @id%s", tableName, setStatements.join(','), pkName, filter.sql);
     parameters.push({ name: 'id', type: helpers.getMssqlType(item.id, true), value: item.id });
     parameters.push.apply(parameters, filter.parameters);
 
@@ -36,7 +37,7 @@ module.exports = function (table, item, query) {
         parameters.push({ name: 'version', type: mssql.VarBinary, value: new Buffer(versionValue, 'base64') });
     }
 
-    sql += util.format("; SELECT @@ROWCOUNT as recordsAffected; SELECT * FROM %s WHERE [id] = @id%s", tableName, filter.sql);
+    sql += util.format("; SELECT @@ROWCOUNT as recordsAffected; SELECT * FROM %s WHERE [%s] = @id%s", tableName, pkName, filter.sql);
 
     return {
         sql: sql,
